@@ -347,8 +347,8 @@
         }
 
         function getRewardImagePath() {
-    return `${getRewardFolder()}/${String(rewardIndex).padStart(3, "0")}.jpg`;
-}
+            return `${getRewardFolder()}/${String(rewardIndex).padStart(3, "0")}.jpg`;
+        }
 
         function updateRewardImage() {
             document.getElementById("rewardImage").src = getRewardImagePath();
@@ -612,12 +612,14 @@
 
                 rewardIndex++;
 
-                if (rewardIndex > getMaxRewardImages()) {
+                updateRewardImage();
+
+                if (rewardIndex >= getMaxRewardImages()) {
                     gameEnded = true;
-                    rewardIndex = getMaxRewardImages();
-                    updateRewardImage();
-                    maid("クリアです♡ 最後まで到達するなんて……生意気ですね、ご主人様♡");
+
                     document.getElementById("result").textContent = "CLEAR！";
+                    maid("クリアです♡");
+
                     save();
                     return;
                 }
