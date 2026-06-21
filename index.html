@@ -159,12 +159,15 @@
         .rewardPanel {
             text-align: center;
             background: #fff0f8;
+            border-radius: 16px;
+            padding: 12px;
+            margin: 12px 0;
         }
 
         .rewardImage {
             width: 100%;
             max-width: 760px;
-            max-height: 70vh;
+            max-height: 55vh;
             object-fit: contain;
             display: block;
             margin: auto;
@@ -234,10 +237,6 @@
 
         </div>
 
-        <div class="panel rewardPanel">
-            <img id="rewardImage" class="rewardImage" src="01_BlackShort/001.jpg" alt="ご褒美画像">
-        </div>
-
         <div class="panel">
             <div class="controls">
                 <select id="quizType" onchange="loadByQuizType()">
@@ -266,6 +265,11 @@
             </div>
 
             <h2 id="mode">通常モード</h2>
+
+            <div class="rewardPanel inlineReward">
+                <img id="rewardImage" class="rewardImage" src="reward/001_025/001.jpg" alt="ご褒美画像">
+            </div>
+
             <div class="small" id="meta">読み込み中...</div>
 
             <div class="question" id="question">問題を読み込み中です♡</div>
@@ -292,48 +296,58 @@
         let pool = [];
         let current = null;
         let answered = false;
-        let correctStreak = 0;
 
-        const rewardData = {
-            "01_BlackShort": { name: "黒髪ショート", count: 25 },
-            "02_Pink": { name: "ピンク", count: 25 },
-            "03_Brown": { name: "ブラウン", count: 25 },
-            "04_BlackLong": { name: "黒髪ロング", count: 25 },
-            "05_Silver": { name: "シルバー", count: 25 },
-            "06_PetitMate": { name: "プチメイト", count: 75 }
+        let rewardFolders = [];
+        let activeRewardFolder = "";
+
+        const selectableRewards = {
+            "001_025": "黒髪ショート",
+            "002_025": "ピンク",
+            "003_025": "ブラウン",
+            "004_025": "黒髪ロング",
+            "005_025": "シルバー"
         };
 
         let rewardIndex = 1;
         let missCount = 0;
         let maxMiss = 3;
         let gameEnded = false;
-        let activeRewardFolder = "";
+        let score = JSON.parse(
+            localStorage.getItem("takkenScore") || '{"correct":0,"wrong":0}'
+        );
 
-        let score = JSON.parse(localStorage.getItem("takkenScore") || '{"correct":0,"wrong":0}');
-        let review = JSON.parse(localStorage.getItem("takkenReview") || "[]");
+        let review = JSON.parse(
+            localStorage.getItem("takkenReview") || "[]"
+        );
 
         function maid(text) {
             console.log(text);
         }
+
+        async function loadRewardFolders() {
+            const res = await fetch("rewards.json");
+            rewardFolders = await res.json();
+        }
+
         function setupRewardFolders() {
             const select = document.getElementById("rewardFolder");
             select.innerHTML = "";
 
-            Object.entries(rewardData).forEach(([folder, data]) => {
-                select.innerHTML += `<option value="${folder}">${data.name}</option>`;
+            Object.entries(selectableRewards).forEach(([folder, name]) => {
+                select.innerHTML += `<option value="${folder}">${name}</option>`;
             });
         }
 
         function getRewardFolder() {
-            return activeRewardFolder || Object.keys(rewardData)[0];
+            return activeRewardFolder || document.getElementById("rewardFolder").value;
         }
 
         function getMaxRewardImages() {
-            return rewardData[getRewardFolder()].count;
+            return Number(getRewardFolder().split("_").pop());
         }
 
         function getRewardImagePath() {
-            return `${getRewardFolder()}/${String(rewardIndex).padStart(3, "0")}.jpg`;
+            return `reward/${getRewardFolder()}/${String(rewardIndex).padStart(3, "0")}.jpg`;
         }
 
         function updateRewardImage() {
@@ -342,7 +356,9 @@
         }
 
         function changeRewardFolder() {
+            activeRewardFolder = document.getElementById("rewardFolder").value;
             resetGameProgress();
+            startNormal();
         }
 
         function resetGameProgress() {
@@ -351,32 +367,30 @@
             gameEnded = false;
             answered = false;
 
-            const selected = document.getElementById("rewardFolder").value;
-            const folders = Object.keys(rewardData);
-
-            activeRewardFolder =
-                selected === "RANDOM"
-                    ? folders[Math.floor(Math.random() * folders.length)]
-                    : selected;
+            if (!activeRewardFolder) {
+                activeRewardFolder = document.getElementById("rewardFolder").value;
+            }
 
             updateRewardImage();
 
             document.getElementById("result").textContent = "";
             document.getElementById("explanation").classList.add("hidden");
             document.getElementById("nextBtn").style.display = "none";
-
-            maid("最初から開始です♡");
         }
+
         function restartGame() {
+            activeRewardFolder = document.getElementById("rewardFolder").value;
             resetGameProgress();
             startNormal();
         }
 
         function startRandomReward() {
-            const folders = Object.keys(rewardData);
-            const randomFolder = folders[Math.floor(Math.random() * folders.length)];
+            const candidates = rewardFolders.filter(folder => {
+                const num = Number(folder.split("_")[0]);
+                return num >= 6;
+            });
 
-            document.getElementById("rewardFolder").value = randomFolder;
+            activeRewardFolder = candidates[Math.floor(Math.random() * candidates.length)];
 
             resetGameProgress();
             startNormal();
@@ -452,6 +466,7 @@
         }
 
         function loadCSVText(text) {
+            console.log(text.slice(0, 300));
             const raw = parseCSV(text);
 
             allQuestions = raw.map(obj => {
@@ -484,7 +499,10 @@
             });
 
             if (!allQuestions.length) {
-                maid("問題が読み込めませんでした〜。列名、間違えてません？");
+                document.getElementById("meta").textContent = "問題読み込み失敗";
+                document.getElementById("question").textContent =
+                    "CSVは取得できましたが、問題として読み込めませんでした。列名やTRUE/FALSE、correct_answerを確認してください。";
+                console.log("CSV raw:", raw);
                 return;
             }
 
@@ -649,10 +667,14 @@
             progress.textContent = `${rewardIndex} / ${getMaxRewardImages()}`;
         }
 
-        setupRewardFolders();
-        resetGameProgress();
-        updateStats();
-        loadByQuizType();
+        (async function init() {
+            await loadRewardFolders();
+            setupRewardFolders();
+            activeRewardFolder = document.getElementById("rewardFolder").value;
+            resetGameProgress();
+            updateStats();
+            loadByQuizType();
+        })();
     </script>
 </body>
 
