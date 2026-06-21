@@ -267,7 +267,9 @@
             <h2 id="mode">通常モード</h2>
 
             <div class="rewardPanel inlineReward">
-                <img id="rewardImage" class="rewardImage" src="001_025/001.jpg" alt="ご褒美画像">
+                <img id="rewardImage" class="rewardImage">
+                <video id="rewardVideo" class="rewardImage" autoplay loop muted playsinline
+                    style="display:none;"></video>
             </div>
 
             <div class="small" id="meta">読み込み中...</div>
@@ -301,6 +303,7 @@
         let activeRewardFolder = "";
 
         const selectableRewards = {
+            "000_017": "動画♡",
             "001_025": "黒髪ショート",
             "002_025": "ピンク",
             "003_025": "ブラウン",
@@ -350,8 +353,37 @@
             return `${getRewardFolder()}/${String(rewardIndex).padStart(3, "0")}.jpg`;
         }
 
-        function updateRewardImage() {
-            document.getElementById("rewardImage").src = getRewardImagePath();
+        async function updateRewardImage() {
+
+            const num = String(rewardIndex).padStart(3, "0");
+
+            const jpgPath = `${getRewardFolder()}/${num}.jpg`;
+            const mp4Path = `${getRewardFolder()}/${num}.mp4`;
+
+            const img = document.getElementById("rewardImage");
+            const video = document.getElementById("rewardVideo");
+
+            try {
+                const res = await fetch(mp4Path, { method: "HEAD" });
+
+                if (res.ok) {
+                    img.style.display = "none";
+
+                    video.style.display = "block";
+                    video.src = mp4Path;
+                    video.load();
+
+                    updateProgress();
+                    return;
+                }
+            } catch { }
+
+            video.pause();
+            video.style.display = "none";
+
+            img.style.display = "block";
+            img.src = jpgPath;
+
             updateProgress();
         }
 
@@ -612,9 +644,9 @@
 
                 rewardIndex++;
 
-                updateRewardImage();
-
                 if (rewardIndex >= getMaxRewardImages()) {
+                    rewardIndex = getMaxRewardImages();
+                    updateRewardImage();
                     gameEnded = true;
 
                     document.getElementById("result").textContent = "CLEAR！";
