@@ -1,0 +1,659 @@
+<!doctype html>
+<html lang="ja">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>宅建メイドクイズ</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: "Meiryo", sans-serif;
+            background: linear-gradient(135deg, #ffe8f4, #f4efff);
+            color: #322733
+        }
+
+        .app {
+            max-width: 1050px;
+            margin: auto;
+            padding: 16px
+        }
+
+        .panel {
+            background: white;
+            border: 3px solid #2d2230;
+            border-radius: 22px;
+            box-shadow: 0 8px 0 #2d2230;
+            padding: 18px;
+            margin: 14px 0
+        }
+
+        h1 {
+            margin: 0 0 8px;
+            color: #d63384
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 260px 1fr;
+            gap: 16px
+        }
+
+        .maid {
+            background: #fff0f8;
+            text-align: center
+        }
+
+        .face {
+            font-size: 110px
+        }
+
+        .bubble {
+            background: #2d2230;
+            color: white;
+            border-radius: 16px;
+            padding: 12px;
+            margin-top: 18px;
+            font-weight: bold;
+            font-size: 18px;
+            line-height: 1.5;
+        }
+
+        button,
+        input,
+        select {
+            font-size: 16px;
+            border-radius: 12px;
+            border: 2px solid #2d2230;
+            padding: 10px;
+            margin: 4px
+        }
+
+        button {
+            background: #ff7fbd;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 0 #2d2230
+        }
+
+        button:disabled {
+            opacity: .45;
+            cursor: not-allowed
+        }
+
+        .sub {
+            background: white;
+            color: #d63384
+        }
+
+        .next {
+            display: none;
+            background: #2d2230;
+            color: white
+        }
+
+        .question {
+            font-size: 20px;
+            line-height: 1.7;
+            background: #fff7fb;
+            border-radius: 16px;
+            padding: 18px;
+            margin-top: 12px;
+            white-space: pre-wrap
+        }
+
+        .result {
+            font-size: 22px;
+            font-weight: bold;
+            margin-top: 12px
+        }
+
+        .ok {
+            color: #168a3a
+        }
+
+        .ng {
+            color: #d92754
+        }
+
+        .small {
+            font-size: 13px;
+            color: #6d5d66
+        }
+
+        .stats {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin: 10px 0
+        }
+
+        .badge {
+            background: #2d2230;
+            color: white;
+            border-radius: 999px;
+            padding: 8px 12px
+        }
+
+        .hidden {
+            display: none
+        }
+
+        .choiceBtn {
+            display: block;
+            width: 100%;
+            text-align: left;
+            margin: 8px 0
+        }
+
+        .maidImage {
+            width: 210px;
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 10px auto 18px;
+            filter: drop-shadow(0 8px 0 #2d223033);
+        }
+
+        .rewardPanel {
+            text-align: center;
+            background: #fff0f8;
+        }
+
+        .rewardImage {
+            width: 100%;
+            max-width: 760px;
+            max-height: 70vh;
+            object-fit: contain;
+            display: block;
+            margin: auto;
+            border-radius: 16px;
+        }
+
+        @media(max-width:760px) {
+            .app {
+                padding: 8px;
+            }
+
+            .panel {
+                padding: 14px;
+                margin: 10px 0;
+                border-radius: 18px;
+            }
+
+            h1 {
+                font-size: 28px;
+            }
+
+            button,
+            select {
+                width: 100%;
+                font-size: 18px;
+                padding: 14px;
+            }
+
+            .controls {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+            }
+
+            .controls select {
+                width: 100%;
+            }
+
+            .choiceBtn {
+                width: 100%;
+                font-size: 17px;
+                line-height: 1.5;
+            }
+
+            .question {
+                font-size: 18px;
+                padding: 14px;
+            }
+
+            .stats {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .rewardImage {
+                max-width: 100%;
+                max-height: 55vh;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app">
+        <div class="panel">
+            <h1>ご褒美チャレンジ</h1>
+
+        </div>
+
+        <div class="panel rewardPanel">
+            <img id="rewardImage" class="rewardImage" src="01_BlackShort/001.jpg" alt="ご褒美画像">
+        </div>
+
+        <div class="panel">
+            <div class="controls">
+                <select id="quizType" onchange="loadByQuizType()">
+                    <option value="truefalse">○×問題</option>
+                    <option value="choice">四択問題</option>
+                </select>
+
+                <select id="rewardFolder" onchange="changeRewardFolder()"></select>
+                <button class="sub" onclick="startRandomReward()">ランダム作品</button>
+
+                <select id="category" onchange="startNormal()">
+                    <option value="ALL">全分野</option>
+                </select>
+            </div>
+
+            <button class="sub" onclick="startReview()">間違えた問題を復習</button>
+            <button class="sub" onclick="resetScore()">スコアリセット</button>
+            <button class="sub" onclick="restartGame()">最初から</button>
+
+            <div class="stats">
+                <div class="badge">正解 <span id="correctCount">0</span></div>
+                <div class="badge">不正解 <span id="wrongCount">0</span></div>
+                <div class="badge">正答率 <span id="rate">0%</span></div>
+                <div class="badge">復習数 <span id="reviewCount">0</span></div>
+                <div class="badge">進行度 <span id="progressCount">1 / 25</span></div>
+            </div>
+
+            <h2 id="mode">通常モード</h2>
+            <div class="small" id="meta">読み込み中...</div>
+
+            <div class="question" id="question">問題を読み込み中です♡</div>
+
+            <div id="answerButtons"></div>
+            <button id="nextBtn" class="next" onclick="nextQuestion()">次の問題へ ▶</button>
+
+            <div class="result" id="result"></div>
+            <div class="question hidden" id="explanation"></div>
+        </div>
+    </div>
+
+    <script>
+        const SHEET_ID = "1e75XQbeuG4gsO7vO94-_t4qJVDsCvpHtlXWWoaEZ53c";
+
+        const TRUE_FALSE_CSV_URL =
+            `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=TrueFalse`;
+
+        const MULTIPLE_CHOICE_CSV_URL =
+            `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=MultipleChoice`;
+
+        let quizType = "truefalse";
+        let allQuestions = [];
+        let pool = [];
+        let current = null;
+        let answered = false;
+        let correctStreak = 0;
+
+        const rewardData = {
+            "01_BlackShort": { name: "黒髪ショート", count: 25 },
+            "02_Pink": { name: "ピンク", count: 25 },
+            "03_Brown": { name: "ブラウン", count: 25 },
+            "04_BlackLong": { name: "黒髪ロング", count: 25 },
+            "05_Silver": { name: "シルバー", count: 25 },
+            "06_PetitMate": { name: "プチメイト", count: 75 }
+        };
+
+        let rewardIndex = 1;
+        let missCount = 0;
+        let maxMiss = 3;
+        let gameEnded = false;
+        let activeRewardFolder = "";
+
+        let score = JSON.parse(localStorage.getItem("takkenScore") || '{"correct":0,"wrong":0}');
+        let review = JSON.parse(localStorage.getItem("takkenReview") || "[]");
+
+        function maid(text) {
+            console.log(text);
+        }
+        function setupRewardFolders() {
+            const select = document.getElementById("rewardFolder");
+            select.innerHTML = "";
+
+            Object.entries(rewardData).forEach(([folder, data]) => {
+                select.innerHTML += `<option value="${folder}">${data.name}</option>`;
+            });
+        }
+
+        function getRewardFolder() {
+            return activeRewardFolder || Object.keys(rewardData)[0];
+        }
+
+        function getMaxRewardImages() {
+            return rewardData[getRewardFolder()].count;
+        }
+
+        function getRewardImagePath() {
+            return `${getRewardFolder()}/${String(rewardIndex).padStart(3, "0")}.jpg`;
+        }
+
+        function updateRewardImage() {
+            document.getElementById("rewardImage").src = getRewardImagePath();
+            updateProgress();
+        }
+
+        function changeRewardFolder() {
+            resetGameProgress();
+        }
+
+        function resetGameProgress() {
+            rewardIndex = 1;
+            missCount = 0;
+            gameEnded = false;
+            answered = false;
+
+            const selected = document.getElementById("rewardFolder").value;
+            const folders = Object.keys(rewardData);
+
+            activeRewardFolder =
+                selected === "RANDOM"
+                    ? folders[Math.floor(Math.random() * folders.length)]
+                    : selected;
+
+            updateRewardImage();
+
+            document.getElementById("result").textContent = "";
+            document.getElementById("explanation").classList.add("hidden");
+            document.getElementById("nextBtn").style.display = "none";
+
+            maid("最初から開始です♡");
+        }
+        function restartGame() {
+            resetGameProgress();
+            startNormal();
+        }
+
+        function startRandomReward() {
+            const folders = Object.keys(rewardData);
+            const randomFolder = folders[Math.floor(Math.random() * folders.length)];
+
+            document.getElementById("rewardFolder").value = randomFolder;
+
+            resetGameProgress();
+            startNormal();
+        }
+
+        function save() {
+            localStorage.setItem("takkenScore", JSON.stringify(score));
+            localStorage.setItem("takkenReview", JSON.stringify(review));
+            updateStats();
+        }
+
+        function updateStats() {
+            const total = score.correct + score.wrong;
+            document.getElementById("correctCount").textContent = score.correct;
+            document.getElementById("wrongCount").textContent = score.wrong;
+            document.getElementById("rate").textContent = total ? Math.round(score.correct / total * 100) + "%" : "0%";
+            document.getElementById("reviewCount").textContent = review.length;
+        }
+
+        function loadByQuizType() {
+            quizType = document.getElementById("quizType").value;
+            loadFromUrl();
+        }
+
+        async function loadFromUrl() {
+            const url = quizType === "choice"
+                ? MULTIPLE_CHOICE_CSV_URL
+                : TRUE_FALSE_CSV_URL;
+
+            try {
+                maid("CSVを読み込み中です。待つくらいできますよね〜？♡");
+                const res = await fetch(url);
+                const text = await res.text();
+                loadCSVText(text);
+            } catch (e) {
+                maid("読み込み失敗です〜。共有設定かURLを見直してくださいね♡");
+                document.getElementById("meta").textContent = "読み込み失敗";
+                document.getElementById("question").textContent =
+                    "問題を読み込めませんでした。スプレッドシートの共有設定を確認してください。";
+            }
+        }
+
+        function loadFromFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = () => loadCSVText(reader.result);
+            reader.readAsText(file, "utf-8");
+        }
+
+        function parseCSV(text) {
+            const rows = [];
+            let row = [], cell = "", inQuote = false;
+
+            for (let i = 0; i < text.length; i++) {
+                const c = text[i], n = text[i + 1];
+                if (c === '"' && inQuote && n === '"') { cell += '"'; i++; }
+                else if (c === '"') { inQuote = !inQuote; }
+                else if (c === "," && !inQuote) { row.push(cell); cell = ""; }
+                else if ((c === "\n" || c === "\r") && !inQuote) {
+                    if (c === "\r" && n === "\n") i++;
+                    row.push(cell); rows.push(row); row = []; cell = "";
+                } else cell += c;
+            }
+            if (cell || row.length) { row.push(cell); rows.push(row); }
+
+            const header = rows.shift().map(h => h.trim());
+            return rows.map(r => {
+                const obj = {};
+                header.forEach((h, i) => obj[h] = r[i] ?? "");
+                return obj;
+            });
+        }
+
+        function loadCSVText(text) {
+            const raw = parseCSV(text);
+
+            allQuestions = raw.map(obj => {
+                if (quizType === "choice") {
+                    return {
+                        id: "choice-" + obj.number,
+                        number: obj.number,
+                        category: obj.q_category,
+                        question: obj.question,
+                        type: "choice",
+                        choices: [obj.choice1, obj.choice2, obj.choice3, obj.choice4],
+                        correct: String(obj.correct_answer).trim(),
+                        explanation: obj.explanation
+                    };
+                }
+
+                return {
+                    id: "tf-" + obj.number,
+                    number: obj.number,
+                    category: obj.q_category,
+                    question: obj.question,
+                    type: "truefalse",
+                    correct: String(obj.correct_answer).trim().toUpperCase(),
+                    explanation: obj.explanation
+                };
+            }).filter(q => {
+                if (!q.question) return false;
+                if (q.type === "choice") return ["1", "2", "3", "4"].includes(q.correct);
+                return q.correct === "TRUE" || q.correct === "FALSE";
+            });
+
+            if (!allQuestions.length) {
+                maid("問題が読み込めませんでした〜。列名、間違えてません？");
+                return;
+            }
+
+            const categories = [...new Set(allQuestions.map(q => q.category).filter(Boolean))];
+            document.getElementById("category").innerHTML =
+                '<option value="ALL">全分野</option>' +
+                categories.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("");
+
+            maid(`${allQuestions.length}問読み込みました。まあまあ使えますね、ご主人様♡`);
+            startNormal();
+        }
+
+        function startNormal() {
+            document.getElementById("mode").textContent =
+                quizType === "choice" ? "四択 通常モード" : "○× 通常モード";
+
+            const cat = document.getElementById("category").value;
+            pool = allQuestions.filter(q => cat === "ALL" || q.category === cat);
+            nextQuestion();
+        }
+
+        function startReview() {
+            document.getElementById("mode").textContent =
+                quizType === "choice" ? "四択 復習モード" : "○× 復習モード";
+
+            pool = review
+                .map(id => allQuestions.find(q => q.id === id))
+                .filter(Boolean);
+
+            if (!pool.length) {
+                maid("復習する問題がありません。ちっ、ちょっと優秀じゃないですか♡");
+                return;
+            }
+            nextQuestion();
+        }
+
+        function nextQuestion() {
+            answered = false;
+            document.getElementById("nextBtn").style.display = "none";
+            document.getElementById("result").textContent = "";
+            document.getElementById("explanation").classList.add("hidden");
+            document.getElementById("explanation").textContent = "";
+
+            if (!pool.length) {
+                current = null;
+                document.getElementById("question").textContent = "問題がありません。読み込みか分野を確認してください。";
+                document.getElementById("answerButtons").innerHTML = "";
+                return;
+            }
+
+            current = pool[Math.floor(Math.random() * pool.length)];
+            document.getElementById("meta").textContent = `No.${current.number} / ${current.category}`;
+            document.getElementById("question").textContent = current.question;
+            renderAnswerButtons();
+            maid("ほらほら、答えを選んでくださいな♡");
+        }
+
+        function renderAnswerButtons() {
+            const area = document.getElementById("answerButtons");
+            area.innerHTML = "";
+
+            if (current.type === "choice") {
+                current.choices.forEach((text, index) => {
+                    const btn = document.createElement("button");
+                    btn.className = "choiceBtn";
+                    btn.textContent = `${index + 1}. ${text}`;
+                    btn.onclick = () => answer(String(index + 1));
+                    area.appendChild(btn);
+                });
+            } else {
+                area.innerHTML = `
+      <button onclick="answer('TRUE')">○ TRUE</button>
+      <button onclick="answer('FALSE')">× FALSE</button>
+    `;
+            }
+        }
+
+        function disableAnswerButtons() {
+            document.querySelectorAll("#answerButtons button").forEach(btn => {
+                btn.disabled = true;
+            });
+        }
+
+        function answer(choice) {
+            if (gameEnded) return;
+            if (answered) return;
+            if (!current) return maid("まだ問題がありませんよ〜。先に読み込んでください♡");
+
+            answered = true;
+            disableAnswerButtons();
+
+            const ok = current.type === "choice"
+                ? String(choice) === String(current.correct)
+                : choice === current.correct;
+
+            const result = document.getElementById("result");
+            result.textContent = ok ? "正解！" : "不正解！";
+            result.className = "result " + (ok ? "ok" : "ng");
+
+            const exp = document.getElementById("explanation");
+            exp.textContent = "解説：\n" + current.explanation;
+            exp.classList.remove("hidden");
+
+            if (ok) {
+                score.correct++;
+                review = review.filter(id => id !== current.id);
+
+                rewardIndex++;
+
+                if (rewardIndex > getMaxRewardImages()) {
+                    gameEnded = true;
+                    rewardIndex = getMaxRewardImages();
+                    updateRewardImage();
+                    maid("クリアです♡ 最後まで到達するなんて……生意気ですね、ご主人様♡");
+                    document.getElementById("result").textContent = "CLEAR！";
+                    save();
+                    return;
+                }
+
+                updateRewardImage();
+                maid(`正解です♡ ご褒美を1枚進めてあげます。現在 ${rewardIndex} / ${getMaxRewardImages()} 枚目ですよ♡`);
+            } else {
+                score.wrong++;
+                missCount++;
+
+                if (!review.includes(current.id)) review.push(current.id);
+
+                if (missCount >= maxMiss) {
+                    gameEnded = true;
+                    maid("ゲームオーバー♡ 3回も間違えるなんて、ざーこご主人様〜♡");
+                    document.getElementById("result").textContent = "GAME OVER";
+                    save();
+                    return;
+                }
+
+                maid(`不正解です♡ あと ${maxMiss - missCount} 回間違えたらゲームオーバーですよ〜♡`);
+            }
+
+            save();
+            document.getElementById("nextBtn").style.display = "inline-block";
+        }
+
+        function resetScore() {
+            score = { correct: 0, wrong: 0 };
+            review = [];
+            save();
+            maid("記録を消してあげました。これで最初からざーこですね♡");
+        }
+
+        function random(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+        function escapeHtml(str) {
+            return String(str).replace(/[&<>"']/g, m => ({
+                "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+            }[m]));
+        }
+
+        function updateProgress() {
+            const progress = document.getElementById("progressCount");
+            if (!progress) return;
+
+            progress.textContent = `${rewardIndex} / ${getMaxRewardImages()}`;
+        }
+
+        setupRewardFolders();
+        resetGameProgress();
+        updateStats();
+        loadByQuizType();
+    </script>
+</body>
+
+</html>
